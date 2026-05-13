@@ -20,6 +20,7 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),
     # Esta é a linha mágica que faz o botão de Login/Logout aparecer na API:
     path('api-auth/', include('rest_framework.urls')),
 ]
