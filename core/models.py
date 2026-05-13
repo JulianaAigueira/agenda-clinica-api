@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 
 # Modelo que representa os serviços/procedimentos oferecidos pela clínica
@@ -41,3 +43,28 @@ class Appointment(models.Model):
     def __str__(self):
         # Exibe uma string legível no painel de administração
         return f"{self.client.username} - {self.procedure.name} ({self.date_time})"
+
+    def clean(self):
+        # Garante que a data digitada tenha fuso horário para poder comparar sem erro
+        if self.date_time and timezone.is_naive(self.date_time):
+            self.date_time = timezone.make_aware(self.date_time)
+
+        # 1. Verificar se a data é no passado
+        if self.date_time and self.date_time < timezone.now():
+            raise ValidationError("Você não pode agendar uma consulta em uma data que já passou.")
+
+
+        # 2. Verificar se o médico já tem outro agendamento nesse exato horário
+        # Buscamos se existe algum agendamento para o mesmo especialista e mesma hora
+        conflito = Appointment.objects.filter(
+            specialist=self.specialist,
+            date_time=self.date_time
+        ).exclude(id=self.id)  # Ignora o próprio agendamento caso seja uma edição
+
+        if conflito.exists():
+            raise ValidationError("Este especialista já possui um agendamento para este horário.")
+
+    # Sobrescrevemos o método save para garantir que a trava seja chamada sempre
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Isso força a execução do método clean acima
+        super().save(*args, **kwargs)

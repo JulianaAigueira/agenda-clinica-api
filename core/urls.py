@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UserViewSet, ProcedureViewSet, AppointmentViewSet, index, agendar
+from .views import UserViewSet, ProcedureViewSet, AppointmentViewSet, index, agendar, meus_agendamentos
 
 # O Router cria automaticamente os links para os nossos ViewSets
 router = DefaultRouter()
@@ -13,6 +13,8 @@ urlpatterns = [
 
     # 2. ADICIONE ESTA NOVA LINHA:
     path('site/agendar/<int:procedure_id>/', agendar, name='agendar'),
+
+    path('site/meus-agendamentos/', meus_agendamentos, name='meus_agendamentos'),
 
     path('', include(router.urls)),
 ]

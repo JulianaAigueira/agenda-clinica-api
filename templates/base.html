@@ -14,7 +14,7 @@
             <div class="collapse navbar-collapse">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link text-white" href="#">Meus Agendamentos</a>
+                        <a class="nav-link text-white" href="{% url 'meus_agendamentos' %}">Meus Agendamentos</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-white" href="#">Serviços</a>
@@ -26,10 +26,15 @@
 
     <div class="container mt-5">
 
-        {% if messages %}
+       {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-                    <strong>Tudo certo!</strong> {{ message }}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+                    {% if message.tags == 'error' %}
+                        <strong>Ops!</strong>
+                    {% else %}
+                        <strong>Tudo certo!</strong>
+                    {% endif %}
+                    {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             {% endfor %}
