@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h2 class="fw-bold text-custom">📋 Painel da Recepção</h2>
+        <p class="text-muted">Próximos agendamentos da clínica.</p>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Data e Hora</th>
+                    <th>Paciente</th>
+                    <th>Procedimento</th>
+                    <th>Médico(a)</th>
+                    <th class="text-center">Contato</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for agendamento in agendamentos %}
+                <tr>
+                    <td class="ps-4 fw-bold text-custom">{{ agendamento.date_time|date:"d/m/Y H:i" }}</td>
+
+                    <td>{{ agendamento.client.get_full_name|default:agendamento.client.username }}</td>
+
+                    <td>{{ agendamento.procedure.name }}</td>
+
+                    <td><span class="badge bg-secondary rounded-pill">{{ agendamento.specialist.username }}</span></td>
+
+                    <td class="text-center">
+                        <span class="text-muted small">{{ agendamento.client.email }}</span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-5 text-muted">
+                        Nenhum agendamento futuro encontrado na agenda.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

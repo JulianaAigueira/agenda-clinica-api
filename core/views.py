@@ -6,6 +6,9 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from django.contrib.auth.models import User
 from .models import Procedure, Appointment
 from .serializers import UserSerializer, ProcedureSerializer, AppointmentSerializer
+from django.contrib.auth.forms import UserCreationForm
+from django.utils import timezone
+
 
 # --- PÁGINA INICIAL ---
 def index(request):
@@ -17,12 +20,17 @@ def index(request):
 def agendar(request, procedure_id):
     procedure = get_object_or_404(Procedure, id=procedure_id)
 
+    # 1. Buscamos TODOS os usuários que são marcados como equipe (staff)
+    especialistas = User.objects.filter(is_staff=True)
+
     if request.method == 'POST':
         data_hora_escolhida = request.POST.get('data_hora')
-        specialist = User.objects.filter(is_staff=True).first()
+        especialista_id = request.POST.get('specialist')  # 2. Pegamos o ID que o cliente escolheu no form
+
+        # 3. Buscamos exatamente o médico que o cliente selecionou
+        specialist = get_object_or_404(User, id=especialista_id, is_staff=True)
 
         try:
-            # Tentamos criar o agendamento
             Appointment.objects.create(
                 client=request.user,
                 specialist=specialist,
@@ -32,14 +40,27 @@ def agendar(request, procedure_id):
             messages.success(request, f'Agendamento para {procedure.name} realizado com sucesso!')
             return redirect('index')
 
+        except Exception as e:
+            messages.error(request, str(e))
+            # Se der erro de validação (ex: data no passado), devolvemos a lista de médicos para a tela não quebrar
+            return render(request, 'agendar.html', {'procedure': procedure, 'especialistas': especialistas})
 
-        except Exception:
-            messages.error(request,
-                           "Não foi possível realizar o agendamento. Verifique se a data não é no passado ou se o horário já está ocupado.")
-            return render(request, 'agendar.html', {'procedure': procedure})
+    # 4. Enviamos a lista de especialistas para o template HTML
+    return render(request, 'agendar.html', {'procedure': procedure, 'especialistas': especialistas})
 
-    # Se for apenas um acesso comum (GET), mostra a página normalmente
-    return render(request, 'agendar.html', {'procedure': procedure})
+
+def cadastro(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Conta criada com sucesso! Agora pode fazer login.')
+            return redirect('login')
+    else:
+        form = UserCreationForm()
+
+    return render(request, 'registration/cadastro.html', {'form': form})
+
 
 @login_required(login_url='/admin/login/')
 def meus_agendamentos(request):
@@ -67,3 +88,30 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         if user.is_staff:
             return Appointment.objects.all()
         return Appointment.objects.filter(client=user)
+
+
+@login_required(login_url='/admin/login/')
+def cancelar_agendamento(request, appointment_id):
+    # Busca o agendamento garantindo que pertence ao usuário logado
+    agendamento = get_object_or_404(Appointment, id=appointment_id, client=request.user)
+
+    # Por segurança, deleções devem ser feitas via método POST
+    if request.method == 'POST':
+        agendamento.delete()
+        messages.success(request, 'Sua consulta foi cancelada com sucesso.')
+
+    return redirect('meus_agendamentos')
+
+@login_required(login_url='/login/')
+def painel_recepcao(request):
+    # Trava de Segurança: Se não for da equipe, é expulso de volta pra home
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso negado. Apenas membros da equipe podem ver o painel.')
+        return redirect('index')
+
+    # Busca todos os agendamentos de HOJE em diante, ordenados pela data e hora
+    agendamentos = Appointment.objects.filter(
+        date_time__gte=timezone.now()
+    ).order_by('date_time')
+
+    return render(request, 'painel.html', {'agendamentos': agendamentos})

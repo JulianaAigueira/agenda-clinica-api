@@ -17,7 +17,7 @@
                     <th>Data e Hora</th>
                     <th>Especialista</th>
                     <th class="text-center">Status</th>
-                </tr>
+                    <th class="text-center">Ações</th> </tr>
             </thead>
             <tbody>
                 {% for agendamento in agendamentos %}
@@ -28,10 +28,16 @@
                     <td class="text-center">
                         <span class="badge rounded-pill bg-info text-dark">Confirmado</span>
                     </td>
+                    <td class="text-center">
+                        <form action="{% url 'cancelar_agendamento' agendamento.id %}" method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja desmarcar esta consulta?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill">Cancelar</button>
+                        </form>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="text-center py-5 text-muted">
+                    <td colspan="5" class="text-center py-5 text-muted">
                         Você ainda não possui agendamentos realizados.
                     </td>
                 </tr>
